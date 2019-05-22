@@ -1,4 +1,4 @@
-{stdenv, fetchFromGitHub
+{ stdenv, fetchFromGitHub
 , buildPackages
 , callPackage
 , pkgconfig
@@ -10,11 +10,11 @@
 , lua ? null
 , bochs ? null
 , gdb ? null
-, gprobe ? null
-, mach ? null
-, qnx ? null
-, windbg ? null
-, winedbg ? null
+# , gprobe ? null
+# , mach ? null
+# , qnx ? null
+# , windbg ? null
+# , winedbg ? null
 , useX11 ? false
 , rubyBindings ? false
 , pythonBindings ? false
@@ -109,7 +109,7 @@ let
         homepage = http://radare.org/;
         license = stdenv.lib.licenses.gpl2Plus;
         maintainers = with stdenv.lib.maintainers; [ raskin makefu mic92 ];
-        platforms = with stdenv.lib.platforms; linux;
+        platforms = with stdenv.lib.platforms; [ linux darwin ];
         inherit version;
       };
   };
