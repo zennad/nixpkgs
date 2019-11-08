@@ -6,6 +6,7 @@
 , profiledCompiler ? false
 , staticCompiler ? false
 , enableShared ? true
+, enableLTO ? true
 , texinfo ? null
 , perl ? null # optional, for texi2pod (then pod2man)
 , gmp, mpfr, libmpc, gettext, which
@@ -48,6 +49,9 @@ let version = "7.4.0";
         ./riscv-no-relax.patch
       ]
       ++ optional (targetPlatform != hostPlatform) ../libstdc++-target.patch
+      ++ optionals targetPlatform.isNetBSD [
+        ../libstdc++-netbsd-ctypes.patch
+      ]
       ++ optional noSysDirs ../no-sys-dirs.patch
       ++ optional (hostPlatform != buildPlatform) (fetchpatch { # XXX: Refine when this should be applied
         url = "https://git.busybox.net/buildroot/plain/package/gcc/7.1.0/0900-remove-selftests.patch?id=11271540bfe6adafbc133caf6b5b902a816f5f02";
@@ -254,7 +258,7 @@ stdenv.mkDerivation ({
 
     # Basic configuration
     [
-      "--enable-lto"
+      (if enableLTO then "--enable-lto" else "--disable-lto")
       "--disable-libstdcxx-pch"
       "--without-included-gettext"
       "--with-system-zlib"
@@ -302,6 +306,7 @@ stdenv.mkDerivation ({
       "--disable-gnu-indirect-function"
     ]
     ++ optional (targetPlatform.isAarch64) "--enable-fix-cortex-a53-843419"
+    ++ optional targetPlatform.isNetBSD "--disable-libcilkrts"
   ;
 
   targetConfig = if targetPlatform != hostPlatform then targetPlatform.config else null;

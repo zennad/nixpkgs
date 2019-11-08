@@ -1,7 +1,7 @@
-{ stdenv, libXScrnSaver, makeWrapper, fetchurl, unzip, atomEnv, libuuid, at-spi2-atk }:
+{ stdenv, libXScrnSaver, makeWrapper, fetchurl, wrapGAppsHook, gtk3, unzip, atomEnv, libuuid, at-spi2-atk }:
 
 let
-  version = "4.1.3";
+  version = "4.2.8";
   name = "electron-${version}";
 
   throwSystem = throw "Unsupported system: ${stdenv.hostPlatform.system}";
@@ -19,23 +19,31 @@ let
     src = {
       i686-linux = fetchurl {
         url = "https://github.com/electron/electron/releases/download/v${version}/electron-v${version}-linux-ia32.zip";
-        sha256 = "0fjrzyd872frvlihjr5xssjqirrp0c0aa1s1z8kr5y6hw6d13m2y";
+        sha256 = "1sikxr0pfpi3wrf1d7fia1vhb1gacsy9pr7qc0fycgnzsy2nvf8n";
       };
       x86_64-linux = fetchurl {
         url = "https://github.com/electron/electron/releases/download/v${version}/electron-v${version}-linux-x64.zip";
-        sha256 = "1qzfz8nm3p6qsx843jl4nlbnx6l0pa6fzz61bb8w2c1p88dwqddy";
+        sha256 = "0wc954cjc13flvdh8rkmnifdx6nirf273v1n76lsklbsq6c73i4h";
       };
       armv7l-linux = fetchurl {
         url = "https://github.com/electron/electron/releases/download/v${version}/electron-v${version}-linux-armv7l.zip";
-        sha256 = "0x5zw0937gm89rfh094kpabzcddw61ckijm8k0k5spir1nb2za9v";
+        sha256 = "0370ygpsm42drm70gj12i6mg960wchhqis7zz8i9is2ax1b2xjp5";
       };
       aarch64-linux = fetchurl {
         url = "https://github.com/electron/electron/releases/download/v${version}/electron-v${version}-linux-arm64.zip";
-        sha256 = "1fz9przvm4jf97xbg3m7ipcnf2gv1zxhmby3bqps582nhc17fckd";
+        sha256 = "0vl90lsjcsgcxivbaq526ffbx3lsh6axfmpkfxl8cj2jlbsg593k";
       };
     }.${stdenv.hostPlatform.system} or throwSystem;
 
-    buildInputs = [ unzip makeWrapper ];
+    buildInputs = [ gtk3 ];
+
+    nativeBuildInputs = [
+      unzip
+      makeWrapper
+      wrapGAppsHook
+    ];
+
+    dontWrapGApps = true; # electron is in lib, we need to wrap it manually
 
     buildCommand = ''
       mkdir -p $out/lib/electron $out/bin
@@ -50,7 +58,8 @@ let
         $out/lib/electron/electron
 
       wrapProgram $out/lib/electron/electron \
-        --prefix LD_PRELOAD : ${stdenv.lib.makeLibraryPath [ libXScrnSaver ]}/libXss.so.1
+        --prefix LD_PRELOAD : ${stdenv.lib.makeLibraryPath [ libXScrnSaver ]}/libXss.so.1 \
+        "''${gappsWrapperArgs[@]}"
     '';
   };
 
@@ -59,7 +68,7 @@ let
 
     src = fetchurl {
       url = "https://github.com/electron/electron/releases/download/v${version}/electron-v${version}-darwin-x64.zip";
-      sha256 = "0s2fiys8mglmz5qf9l1k19p7ipl0r6vd2222n0j8m83bcr1779rz";
+      sha256 = "083v8k17b596fa63a7qrwyn2k8pd5vmg9yijbqbnpfcg4ja3bjx9";
     };
 
     buildInputs = [ unzip ];

@@ -1,6 +1,6 @@
-{ stdenv, janePackage, ocamlbuild, angstrom, cryptokit, ctypes,
+{ janePackage, ocamlbuild, angstrom, cryptokit, ctypes,
   magic-mime, ocaml-migrate-parsetree, octavius, ounit, ppx_deriving, re,
-  zarith, num, openssl
+  num, openssl
 , ppxlib
 }:
 
@@ -439,13 +439,6 @@ rec {
     hash = "13n6h7mimwkbsjdix96ghfrmxjd036m4h4zgl8qag00aacqclvpi";
     propagatedBuildInputs = [ async expect_test_helpers_kernel ];
     meta.description = "Async helpers for writing expectation tests";
-  };
-
-  bignum = janePackage {
-    pname = "bignum";
-    hash = "0hqd88fb90rsj1wjj4k79gigcf31c6a45msasw99zzifzppr3w3f";
-    propagatedBuildInputs = [ core_kernel zarith num ];
-    meta.description = "Core-flavoured wrapper around zarith's arbitrary-precision rationals";
   };
 
   cinaps = janePackage {

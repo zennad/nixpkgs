@@ -4,14 +4,14 @@
 }:
 
 mkDerivation rec {
-  name = "qlcplus-${version}";
-  version = "4.12.1";
+  pname = "qlcplus";
+  version = "4.12.2";
 
   src = fetchFromGitHub {
     owner = "mcallegari";
     repo = "qlcplus";
     rev = "QLC+_${version}";
-    sha256 = "1kz2zbz7blnm91dysn949bjsy4xqxg658k47p3gbl0pjl58c44hp";
+    sha256 = "1j0jhgql78p5ghcaz36l1k55447s5qiv396a448qic7xqpym2vl3";
   };
 
   nativeBuildInputs = [ qmake pkgconfig ];
@@ -29,11 +29,17 @@ mkDerivation rec {
       variables.pri
   '';
 
+  enableParallelBuilding = true;
+
+  postInstall = ''
+    ln -sf $out/lib/*/libqlcplus* $out/lib
+  '';
+
   meta = with stdenv.lib; {
     description = "A free and cross-platform software to control DMX or analog lighting systems like moving heads, dimmers, scanners etc.";
     maintainers = [ maintainers.globin ];
     license = licenses.asl20;
     platforms = platforms.all;
-    homepage = "http://www.qlcplus.org/";
+    homepage = "https://www.qlcplus.org/";
   };
 }

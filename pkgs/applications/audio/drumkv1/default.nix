@@ -1,12 +1,12 @@
 { stdenv, fetchurl, pkgconfig, libjack2, alsaLib, libsndfile, liblo, lv2, qt5 }:
 
 stdenv.mkDerivation rec {
-  name = "drumkv1-${version}";
-  version = "0.9.5";
+  pname = "drumkv1";
+  version = "0.9.10";
 
   src = fetchurl {
-    url = "mirror://sourceforge/drumkv1/${name}.tar.gz";
-    sha256 = "1azzwqgrrr4zr509sib2jvigfvz5bkwnx82chdadxdwfarai8586";
+    url = "mirror://sourceforge/drumkv1/${pname}-${version}.tar.gz";
+    sha256 = "0h08r6vq23dlnag67fcfcpx83wampx4fag82v4bgkqg2sdh64p3n";
   };
 
   buildInputs = [ libjack2 alsaLib libsndfile liblo lv2 qt5.qtbase qt5.qttools ];

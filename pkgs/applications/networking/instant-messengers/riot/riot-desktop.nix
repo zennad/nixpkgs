@@ -1,27 +1,26 @@
-{ stdenv, fetchFromGitHub, yarn2nix, makeWrapper, makeDesktopItem, electron, riot-web }:
+{ pkgs, stdenv, fetchFromGitHub, makeWrapper, makeDesktopItem, electron_5, riot-web, yarn2nix-moretea }:
+
+# Notes for maintainers:
+# * versions of `riot-web` and `riot-desktop` should be kept in sync.
+# * the Yarn dependency expression must be updated with `./update-riot-desktop.sh <git release tag>`
 
 let
   executableName = "riot-desktop";
-  version = "1.0.4";
+  version = "1.5.0";
   riot-web-src = fetchFromGitHub {
     owner = "vector-im";
     repo = "riot-web";
     rev = "v${version}";
-    sha256 = "152mi81miams5a7l9rd12bnf6wkd1r0lyicgr35r5fq0p6z7a4dk";
+    sha256 = "1xi5zg3602d7gdjxskpk2q3anpn2drrkxyirfvi9mzcfp2r05557";
   };
 
-in yarn2nix.mkYarnPackage rec {
+in yarn2nix-moretea.mkYarnPackage rec {
   name = "riot-desktop-${version}";
   inherit version;
 
   src = "${riot-web-src}/electron_app";
 
-  # The package manifest should be copied on each update of this package.
-  # > cp ${riot-web-src}/electron_app/package.json riot-desktop-package.json
   packageJSON = ./riot-desktop-package.json;
-
-  # The dependency expression can be regenerated using nixos.yarn2nix with the following command:
-  # > yarn2nix --lockfile=${riot-web-src}/electron_app/yarn.lock > riot-desktop-yarndeps.nix
   yarnNix = ./riot-desktop-yarndeps.nix;
 
   nativeBuildInputs = [ makeWrapper ];
@@ -31,7 +30,9 @@ in yarn2nix.mkYarnPackage rec {
     mkdir -p "$out/share/riot"
     ln -s '${riot-web}' "$out/share/riot/webapp"
     cp -r '${riot-web-src}/origin_migrator' "$out/share/riot/origin_migrator"
-    cp -r '.' "$out/share/riot/electron"
+    cp -r './deps/riot-web' "$out/share/riot/electron"
+    rm "$out/share/riot/electron/node_modules"
+    cp -r './node_modules' "$out/share/riot/electron"
 
     # icons
     for icon in $out/share/riot/electron/build/icons/*.png; do
@@ -44,8 +45,14 @@ in yarn2nix.mkYarnPackage rec {
     ln -s "${desktopItem}/share/applications" "$out/share/applications"
 
     # executable wrapper
-    makeWrapper '${electron}/bin/electron' "$out/bin/${executableName}" \
+    makeWrapper '${electron_5}/bin/electron' "$out/bin/${executableName}" \
       --add-flags "$out/share/riot/electron"
+  '';
+
+  # Do not attempt generating a tarball for riot-web again.
+  # note: `doDist = false;` does not work.
+  distPhase = ''
+    true
   '';
 
   # The desktop item properties should be kept in sync with data from upstream:
@@ -54,7 +61,7 @@ in yarn2nix.mkYarnPackage rec {
   # * category and StartupWMClass from the build.linux section of
   #   https://github.com/vector-im/riot-web/blob/develop/package.json
   desktopItem = makeDesktopItem {
-    inherit name;
+    name = "riot";
     exec = executableName;
     icon = "riot";
     desktopName = "Riot";
@@ -70,8 +77,7 @@ in yarn2nix.mkYarnPackage rec {
     description = "A feature-rich client for Matrix.org";
     homepage = https://about.riot.im/;
     license = licenses.asl20;
-    maintainers = with maintainers; [ pacien ];
-    inherit (electron.meta) platforms;
+    maintainers = with maintainers; [ pacien worldofpeace ];
+    inherit (electron_5.meta) platforms;
   };
 }
-

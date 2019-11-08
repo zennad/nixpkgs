@@ -1,17 +1,39 @@
-{ lib, python3, fetchpatch, platformio, esptool, git }:
+{ lib, python3, platformio, esptool, git, protobuf3_7, fetchpatch }:
 
-python3.pkgs.buildPythonApplication rec {
+let
+  python = python3.override {
+    packageOverrides = self: super: {
+      tornado = super.tornado.overridePythonAttrs (oldAttrs: rec {
+        version = "5.1.1";
+        src = oldAttrs.src.override {
+          inherit version;
+          sha256 = "4e5158d97583502a7e2739951553cbd88a72076f152b4b11b64b9a10c4c49409";
+        };
+      });
+      protobuf = super.protobuf.override {
+        protobuf = protobuf3_7;
+      };
+    };
+  };
+
+in python.pkgs.buildPythonApplication rec {
   pname = "esphome";
-  version = "1.11.2";
+  version = "1.13.6";
 
-  src = python3.pkgs.fetchPypi {
+  src = python.pkgs.fetchPypi {
     inherit pname version;
-    sha256 = "0kg8fqv3mv8i852jr42p4mipa9wjlzjwj60j1r2zpgzgr8p8wfs8";
+    sha256 = "53148fc43c6cc6736cb7aa4cc1189caa305812061f55289ff916f8bd731ac623";
+  };
+
+  patches = fetchpatch {
+    url = https://github.com/esphome/esphome/pull/694.patch;
+    includes = [ "esphome/voluptuous_schema.py" ];
+    sha256 = "0i2v1d6mcgc94i9rkaqmls7iyfbaisdji41sfc7bh7cf2j824im9";
   };
 
   ESPHOME_USE_SUBPROCESS = "";
 
-  propagatedBuildInputs = with python3.pkgs; [
+  propagatedBuildInputs = with python.pkgs; [
     voluptuous pyyaml paho-mqtt colorlog
     tornado protobuf tzlocal pyserial ifaddr
   ];
@@ -24,11 +46,6 @@ python3.pkgs.buildPythonApplication rec {
     "--set ESPHOME_USE_SUBPROCESS ''"
   ];
 
-  checkPhase = ''
-    $out/bin/esphomeyaml tests/test1.yaml compile
-    $out/bin/esphomeyaml tests/test2.yaml compile
-  '';
-
   # Platformio will try to access the network
   doCheck = false;
 
@@ -36,6 +53,6 @@ python3.pkgs.buildPythonApplication rec {
     description = "Make creating custom firmwares for ESP32/ESP8266 super easy";
     homepage = https://esphome.io/;
     license = licenses.mit;
-    maintainers = with maintainers; [ dotlambda ];
+    maintainers = with maintainers; [ dotlambda globin ];
   };
 }

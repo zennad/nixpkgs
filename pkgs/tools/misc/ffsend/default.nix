@@ -1,40 +1,47 @@
 { stdenv, fetchFromGitLab, rustPlatform, cmake, pkgconfig, openssl
-, darwin
+, darwin, installShellFiles
 
-, x11Support ? stdenv.isLinux
-, xclip ? null
+, x11Support ? stdenv.isLinux || stdenv.hostPlatform.isBSD
+, xclip ? null, xsel ? null
+, preferXsel ? false # if true and xsel is non-null, use it instead of xclip
 }:
 
-assert x11Support -> xclip != null;
+let
+  usesX11 = stdenv.isLinux || stdenv.hostPlatform.isBSD;
+in
+
+assert (x11Support && usesX11) -> xclip != null || xsel != null;
 
 with rustPlatform;
 
 buildRustPackage rec {
-  name = "ffsend-${version}";
-  version = "0.2.39";
+  pname = "ffsend";
+  version = "0.2.55";
 
   src = fetchFromGitLab {
     owner = "timvisee";
     repo = "ffsend";
     rev = "v${version}";
-    sha256 = "0109g2h8673q6kx1lbci59zg9iczj676fvbip3sf1xfypvca22j9";
+    sha256 = "0z0wa12vnzj07q54nr1zr81vjr1kac60nys26bbi8s6nh46n93wv";
   };
 
-  cargoSha256 = "0yf9zfilj2whhnmbvh8p8vz4gkd8ds21gshylwp4ykqwv5p59nqq";
+  cargoSha256 = "14brb11nb17dykh37y099bhmk85a7z8fld2pivmywfgvz1x3i141";
 
-  nativeBuildInputs = [ cmake pkgconfig ];
+  nativeBuildInputs = [ cmake pkgconfig installShellFiles ];
   buildInputs = [ openssl ]
   ++ stdenv.lib.optionals stdenv.isDarwin (with darwin.apple_sdk.frameworks; [ CoreFoundation CoreServices Security AppKit ])
   ;
 
-  preBuild = if x11Support then ''
-    export XCLIP_PATH="${xclip}/bin/xclip"
-  '' else null;
+  preBuild = stdenv.lib.optionalString (x11Support && usesX11) (
+    if preferXsel && xsel != null then ''
+      export XSEL_PATH="${xsel}/bin/xsel"
+    '' else ''
+      export XCLIP_PATH="${xclip}/bin/xclip"
+    ''
+  );
 
   postInstall = ''
-    install -Dm644 contrib/completions/_ffsend "$out/share/zsh/site-functions/_ffsend"
-    install -Dm644 contrib/completions/ffsend.bash "$out/share/bash-completion/completions/ffsend.bash"
-    install -Dm644 contrib/completions/ffsend.fish "$out/share/fish/vendor_completions.d/ffsend.fish"
+    installShellCompletion contrib/completions/ffsend.{bash,fish} --zsh contrib/completions/_ffsend
   '';
   # There's also .elv and .ps1 completion files but I don't know where to install those
 
@@ -49,6 +56,6 @@ buildRustPackage rec {
     homepage = https://gitlab.com/timvisee/ffsend;
     license = licenses.gpl3;
     maintainers = [ maintainers.lilyball ];
-    platforms = platforms.darwin ++ platforms.linux;
+    platforms = platforms.unix;
   };
 }
